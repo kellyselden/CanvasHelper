@@ -7,25 +7,23 @@ function CanvasHelper(canvas, backgroundColor) {
 	this.turnOffEvents = false;
 	var terminalZindex = -100;
 	var imageLoadingComplete;
-	var ctx = canvas.getContext('2d');
+	var idIncrement = 0;
+	this.ctx = canvas.getContext('2d');
 	this.add = function(obj) {
 		objects.push(obj);
-		if (obj.constructor != CanvasColorObject)
+		if (obj.constructor == CanvasColorObject)
 			colorObjects.push(obj);
-		if (obj.constructor != CanvasImageObject)
+		if (obj.constructor == CanvasImageObject)
 			imageObjects.push(obj);
 		if (oldRects[obj.id]) throw 'object already added';
 		oldRects[obj.id] = getRect(obj);
+		obj.id = idIncrement++;
 		obj.helper = this;
 	}
 	var getRect = function(obj) {
 		return new Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height, obj.zindex);
 	}
 	this.resize = function() {
-		//for (var i in imageObjects) {
-		//	var obj = imageObjects[i];
-		//	
-		//}
 		this.paint(true);
 	}
 	function sortObjectsByZindex() {
@@ -81,10 +79,10 @@ function CanvasHelper(canvas, backgroundColor) {
 		}
 		if (all) {
 			var rects = subtractRects([new Rect(0, 0, canvas.width, canvas.height, terminalZindex)], paintedRects);
-			ctx.fillStyle = backgroundColor;
+			this.ctx.fillStyle = backgroundColor;
 			for (var i in rects) {
 				var rect = rects[i];
-				ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+				this.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
 			}
 		}
 		for (var i in objects) {
@@ -129,10 +127,10 @@ function CanvasHelper(canvas, backgroundColor) {
 			}
 		}
 		var rects = subtractRects([new Rect(rect.x1, rect.y1, rect.x2, rect.y2, terminalZindex)], paintedRects);
-		ctx.fillStyle = backgroundColor;
+		me.ctx.fillStyle = backgroundColor;
 		for (var i in rects) {
 			var rect = rects[i];
-			ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+			me.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
 			paintedRects.push(rect);
 		}
 		for (var i in objects) {
@@ -292,8 +290,7 @@ function Rect(x1, y1, x2, y2, zindex) {
 }
 
 var CanvasBaseObject = Class.extend({
-	init: function(id, x, y, width, height, zindex, draggable) {
-		this.id = id;
+	init: function(x, y, width, height, zindex, draggable) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -303,29 +300,18 @@ var CanvasBaseObject = Class.extend({
 	}
 });
 var CanvasColorObject = CanvasBaseObject.extend({
-	init: function(id, x, y, width, height, zindex, draggable, color) {
-		this._super(id, x, y, width, height, zindex, draggable);
+	init: function(x, y, width, height, zindex, draggable, color) {
+		this._super(x, y, width, height, zindex, draggable);
 		this.color = color;
 	},
-	paint: function(ctx, rect) {
+	paint: function(rect) {
 		helper.ctx.fillStyle = this.color;
 		helper.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
 	}
 });
 var CanvasImageObject = CanvasBaseObject.extend({
-	init: function(id, x, y, width, height, zindex, draggable, getImage,
-		//imageWidthScaleFactor, imageHeightScaleFactor,
-		imageX, imageY, imageWidth, imageHeight,
-		transparent)
-	{
-		this._super(id, x, y, width, height, zindex, draggable);
-		this.getImage = getImage;
-		//this.imageWidthScaleFactor = imageWidthScaleFactor;
-		//this.imageHeightScaleFactor = imageHeightScaleFactor;
-		this.imageX = imageX;
-		this.imageY = imageY;
-		this.imageWidth = imageWidth;
-		this.imageHeight = imageHeight;
+	init: function(x, y, width, height, zindex, draggable, transparent) {
+		this._super(x, y, width, height, zindex, draggable);
 		this.transparent = transparent;
 	},
 	loadImage: function(path) {
@@ -336,13 +322,17 @@ var CanvasImageObject = CanvasBaseObject.extend({
 	setImage: function(image) {
 		this.image = image;
 		helper.imageLoadingComplete = false;
+		if (image.complete)
+			this.setImageDimensions(0, 0, image.width, image.height);
 	},
-	paint: function(ctx, rect) {
+	setImageDimensions: function(imageX, imageY, imageWidth, imageHeight) {
+		this.imageX = imageX;
+		this.imageY = imageY;
+		this.imageWidth = imageWidth;
+		this.imageHeight = imageHeight;
+	},
+	paint: function(rect) {
 		helper.ctx.drawImage(this.image,
-			// (rect.x1 - this.x) * this.imageWidthScaleFactor,
-			// (rect.y1 - this.y) * this.imageHeightScaleFactor,
-			// (rect.x2 - rect.x1) * this.imageWidthScaleFactor,
-			// (rect.y2 - rect.y1) * this.imageHeightScaleFactor,
 			this.imageX,
 			this.imageY,
 			this.imageWidth,
