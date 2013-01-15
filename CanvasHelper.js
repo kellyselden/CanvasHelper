@@ -15,9 +15,8 @@ function CanvasHelper(canvas, backgroundColor) {
 			colorObjects.push(obj);
 		if (obj.constructor == CanvasImageObject)
 			imageObjects.push(obj);
-		if (oldRects[obj.id]) throw 'object already added';
+		if (oldRects[obj.id = idIncrement++]) throw 'object already added';
 		oldRects[obj.id] = getRect(obj);
-		obj.id = idIncrement++;
 		obj.helper = this;
 	}
 	var getRect = function(obj) {
