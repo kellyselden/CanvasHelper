@@ -63,6 +63,12 @@ function CanvasHelper(canvas, backgroundColor) {
 				oldRect.x2 != obj.x + obj.width ||
 				oldRect.y2 != obj.y + obj.height)
 			{
+				//don't repaint part of boxes that don't change
+				if (obj.constructor == CanvasColorObject) {
+					var rect = this.getIntersect(oldRect, newRect);
+					//box moved so fast it has no intersect
+					if (rect) paintedRects.push(rect);
+				}
 				var rects = subtractRects([newRect], paintedRects);
 				for (var j in rects) {
 					var rect = rects[j];
