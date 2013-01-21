@@ -8,6 +8,10 @@ function CanvasHelper(canvas, backgroundColor) {
 	var terminalZindex = -100;
 	var imageLoadingComplete;
 	var idIncrement = 0;
+	this.width = canvas.width;
+	this.height = canvas.height;
+	this.scaleX = 1;
+	this.scaleY = 1;
 	this.ctx = canvas.getContext('2d');
 	this.add = function(obj) {
 		objects.push(obj);
@@ -23,14 +27,20 @@ function CanvasHelper(canvas, backgroundColor) {
 		return new Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height, obj.zindex);
 	}
 	this.resize = function(width, height, scale) {
-		var scaleX = width / canvas.width;
-		var scaleY = height / canvas.height;
-		for (var i in objects) {
-			var obj = objects[i];
-			obj.x *= scaleX;
-			obj.y *= scaleY;
-			obj.width *= scaleX;
-			obj.height *= scaleY;
+		if (scale) {
+			this.scaleX = width / this.width;
+			this.scaleY = height / this.height;
+		} else {
+			//if objects have been scaled, their dimensions become permanent
+			for (var i in objects) {
+				var obj = objects[i];
+				obj.x *= this.scaleX;
+				obj.y *= this.scaleY;
+				obj.width *= this.scaleX;
+				obj.height *= this.scaleY;
+			}
+			this.width = width;
+			this.height = height;
 		}
 		canvas.width = width;
 		canvas.height = height;
@@ -94,10 +104,10 @@ function CanvasHelper(canvas, backgroundColor) {
 			obj.repaint = false;
 		}
 		if (all) {
-			var rects = subtractRects([new Rect(0, 0, canvas.width, canvas.height, terminalZindex)], paintedRects);
+			var rects = subtractRects([new Rect(0, 0, this.width, this.height, terminalZindex)], paintedRects);
 			this.ctx.fillStyle = backgroundColor;
 			for (var i in rects)
-				this.fillRect(rects[i]);
+				this.fillRect(this.scaleRect(rects[i]));
 		}
 		for (var i in objects) {
 			var obj = objects[objects.length - 1 - i];
@@ -144,7 +154,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		me.ctx.fillStyle = backgroundColor;
 		for (var i in rects) {
 			var rect = rects[i];
-			me.fillRect(rect);
+			me.fillRect(me.scaleRect(rect));
 			paintedRects.push(rect);
 		}
 		for (var i in objects) {
@@ -161,11 +171,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		}
 	}
 	this.fillRect = function(rect) {
-		this.ctx.fillRect(
-			Math.round(rect.x1),
-			Math.round(rect.y1),
-			Math.round(rect.x2 - rect.x1),
-			Math.round(rect.y2 - rect.y1));
+		this.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
 	}
 	this.getIntersect = function(r1, r2) {
 		return r1.x1 < r2.x2 && r1.x2 > r2.x1
@@ -222,15 +228,24 @@ function CanvasHelper(canvas, backgroundColor) {
 	function cloneRect(rect) {
 		return new Rect(rect.x1, rect.y1, rect.x2, rect.y2, rect.zindex);
 	}
+	//only a temporary rectangle, never to be saved for rounding error purposes
+	this.scaleRect = function(rect) {
+		return new Rect(
+			Math.round(rect.x1 * this.scaleX),
+			Math.round(rect.y1 * this.scaleY),
+			Math.round(rect.x2 * this.scaleX),
+			Math.round(rect.y2 * this.scaleY)
+		);
+	}
 	
-	function getMouseX(e) { return getMousePos(e).x }
-	function getMouseY(e) { return getMousePos(e).y }
 	function getMousePos(e) {
 		return {
 			x: e.pageX - canvas.offsetLeft,
 			y: e.pageY - canvas.offsetTop
 		}
 	}
+	function getMouseX(e) { return getMousePos(e).x }
+	function getMouseY(e) { return getMousePos(e).y }
 	
 	function hitTest(e, obj) {
 		var pos = getMousePos(e);
@@ -327,7 +342,7 @@ var CanvasColorObject = CanvasBaseObject.extend({
 	},
 	paint: function(rect) {
 		helper.ctx.fillStyle = this.color;
-		helper.fillRect(rect);
+		helper.fillRect(helper.scaleRect(rect));
 	}
 });
 var CanvasImageObject = CanvasBaseObject.extend({
@@ -353,14 +368,15 @@ var CanvasImageObject = CanvasBaseObject.extend({
 		this.imageHeight = imageHeight;
 	},
 	paint: function(rect) {
+		var rect = helper.scaleRect(rect);
 		helper.ctx.drawImage(this.image,
 			this.imageX,
 			this.imageY,
 			this.imageWidth,
 			this.imageHeight,
-			Math.round(rect.x1),
-			Math.round(rect.y1),
-			Math.round(rect.x2 - rect.x1),
-			Math.round(rect.y2 - rect.y1));
+			rect.x1,
+			rect.y1,
+			rect.x2 - rect.x1,
+			rect.y2 - rect.y1);
 	}
 });
