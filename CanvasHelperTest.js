@@ -1,14 +1,10 @@
 var canvas = document.getElementById('canvas');
-function resize() {
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
-}
-resize();
+//canvas.width = window.innerWidth;
+//canvas.height = window.innerHeight;
 function scale() {
-	helper.resize();
+	helper.resize(window.innerWidth, window.innerHeight, true);
 }
 window.onresize = function() {
-	resize();
 	scale();
 };
 var helper = new CanvasHelper(canvas, 'rgb(50, 50, 50)');

@@ -22,7 +22,18 @@ function CanvasHelper(canvas, backgroundColor) {
 	var getRect = function(obj) {
 		return new Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height, obj.zindex);
 	}
-	this.resize = function() {
+	this.resize = function(width, height, scale) {
+		var scaleX = width / canvas.width;
+		var scaleY = height / canvas.height;
+		for (var i in objects) {
+			var obj = objects[i];
+			obj.x *= scaleX;
+			obj.y *= scaleY;
+			obj.width *= scaleX;
+			obj.height *= scaleY;
+		}
+		canvas.width = width;
+		canvas.height = height;
 		this.paint(true);
 	}
 	function sortObjectsByZindex() {
@@ -85,10 +96,8 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (all) {
 			var rects = subtractRects([new Rect(0, 0, canvas.width, canvas.height, terminalZindex)], paintedRects);
 			this.ctx.fillStyle = backgroundColor;
-			for (var i in rects) {
-				var rect = rects[i];
-				this.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
-			}
+			for (var i in rects)
+				this.fillRect(rects[i]);
 		}
 		for (var i in objects) {
 			var obj = objects[objects.length - 1 - i];
@@ -135,7 +144,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		me.ctx.fillStyle = backgroundColor;
 		for (var i in rects) {
 			var rect = rects[i];
-			me.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+			me.fillRect(rect);
 			paintedRects.push(rect);
 		}
 		for (var i in objects) {
@@ -150,6 +159,13 @@ function CanvasHelper(canvas, backgroundColor) {
 				}
 			}
 		}
+	}
+	this.fillRect = function(rect) {
+		this.ctx.fillRect(
+			Math.round(rect.x1),
+			Math.round(rect.y1),
+			Math.round(rect.x2 - rect.x1),
+			Math.round(rect.y2 - rect.y1));
 	}
 	this.getIntersect = function(r1, r2) {
 		return r1.x1 < r2.x2 && r1.x2 > r2.x1
@@ -311,7 +327,7 @@ var CanvasColorObject = CanvasBaseObject.extend({
 	},
 	paint: function(rect) {
 		helper.ctx.fillStyle = this.color;
-		helper.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
+		helper.fillRect(rect);
 	}
 });
 var CanvasImageObject = CanvasBaseObject.extend({
@@ -342,9 +358,9 @@ var CanvasImageObject = CanvasBaseObject.extend({
 			this.imageY,
 			this.imageWidth,
 			this.imageHeight,
-			rect.x1,
-			rect.y1,
-			rect.x2 - rect.x1,
-			rect.y2 - rect.y1);
+			Math.round(rect.x1),
+			Math.round(rect.y1),
+			Math.round(rect.x2 - rect.x1),
+			Math.round(rect.y2 - rect.y1));
 	}
 });
