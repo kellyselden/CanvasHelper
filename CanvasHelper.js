@@ -4,14 +4,14 @@ function CanvasHelper(canvas, backgroundColor) {
 	var colorObjects = [];
 	var imageObjects = [];
 	var oldRects = [];
-	this.turnOffEvents = false;
+	//this.turnOffEvents = false;
 	var terminalZindex = -100;
 	var imageLoadingComplete;
 	var idIncrement = 0;
-	this.width = canvas.width;
-	this.height = canvas.height;
-	this.scaleX = 1;
-	this.scaleY = 1;
+	var preScaleWidth = canvas.width;
+	var preScaleHeight = canvas.height;
+	var scaleX = 1;
+	var scaleY = 1;
 	this.ctx = canvas.getContext('2d');
 	this.add = function(obj) {
 		objects.push(obj);
@@ -20,27 +20,21 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (obj.constructor == CanvasImageObject)
 			imageObjects.push(obj);
 		if (oldRects[obj.id = idIncrement++]) throw 'object already added';
-		oldRects[obj.id] = getRect(obj);
+		oldRects[obj.id] = obj.rect;
 		obj.helper = this;
-	}
-	var getRect = function(obj) {
-		return new Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height, obj.zindex);
 	}
 	this.resize = function(width, height, scale) {
 		if (scale) {
-			this.scaleX = width / this.width;
-			this.scaleY = height / this.height;
+			scaleX = width / preScaleWidth;
+			scaleY = height / preScaleHeight;
 		} else {
 			//if objects have been scaled, their dimensions become permanent
 			for (var i in objects) {
 				var obj = objects[i];
-				obj.x *= this.scaleX;
-				obj.y *= this.scaleY;
-				obj.width *= this.scaleX;
-				obj.height *= this.scaleY;
+				obj.rect = this.scaleRect(obj.rect);
 			}
-			this.width = width;
-			this.height = height;
+			preScaleWidth = width;
+			preScaleHeight = height;
 		}
 		canvas.width = width;
 		canvas.height = height;
@@ -48,9 +42,9 @@ function CanvasHelper(canvas, backgroundColor) {
 	}
 	function sortObjectsByZindex() {
 		objects.sort(function(a, b) {
-			if (a.zindex < b.zindex)
+			if (a.rect.zindex < b.rect.zindex)
 				return 1;
-			if (a.zindex > b.zindex)
+			if (a.rect.zindex > b.rect.zindex)
 				return -1;
 			return 0;
 		});
@@ -69,8 +63,8 @@ function CanvasHelper(canvas, backgroundColor) {
 		for (var i in objects) {
 			var obj = objects[i];
 			if (obj.transparent) continue;
-			var newRect = getRect(obj);
 			var oldRect = oldRects[obj.id];
+			var newRect = obj.rect;
 			if (all || obj.repaint) {
 				var rects = subtractRects([newRect], paintedRects);
 				for (var j in rects) {
@@ -78,12 +72,7 @@ function CanvasHelper(canvas, backgroundColor) {
 					obj.paint(rect);
 					paintedRects.push(rect);
 				}
-			} else if (
-				oldRect.x1 != obj.x ||
-				oldRect.y1 != obj.y ||
-				oldRect.x2 != obj.x + obj.width ||
-				oldRect.y2 != obj.y + obj.height)
-			{
+			} else if (!areRectsEqual(oldRect, newRect)) {
 				//don't repaint part of boxes that don't change
 				if (obj.constructor == CanvasColorObject) {
 					var rect = this.getIntersect(oldRect, newRect);
@@ -104,7 +93,7 @@ function CanvasHelper(canvas, backgroundColor) {
 			obj.repaint = false;
 		}
 		if (all) {
-			var rects = subtractRects([new Rect(0, 0, this.width, this.height, terminalZindex)], paintedRects);
+			var rects = subtractRects([new Rect(0, 0, preScaleWidth, preScaleHeight, terminalZindex)], paintedRects);
 			this.ctx.fillStyle = backgroundColor;
 			for (var i in rects)
 				this.fillRect(this.scaleRect(rects[i]));
@@ -112,20 +101,15 @@ function CanvasHelper(canvas, backgroundColor) {
 		for (var i in objects) {
 			var obj = objects[objects.length - 1 - i];
 			if (!obj.transparent) continue;
-			var newRect = getRect(obj);
 			var oldRect = oldRects[obj.id];
+			var newRect = obj.rect;
 			var rects = subtractRects([newRect], paintedRects);
 			for (var j in rects) {
 				var rect = rects[j];
 				obj.paint(rect);
 				paintedRects.push(rect);
 			}
-			if (
-				oldRect.x1 != obj.x ||
-				oldRect.y1 != obj.y ||
-				oldRect.x2 != obj.x + obj.width ||
-				oldRect.y2 != obj.y + obj.height)
-			{
+			if (!areRectsEqual(oldRect, newRect)) {
 				oldRect.zindex = terminalZindex;
 				rects = subtractRects([oldRect], paintedRects);
 				for (var j in rects)
@@ -140,7 +124,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		for (var i in objects) {
 			var obj = objects[i];
 			if (obj.transparent) continue;
-			var intersect = me.getIntersect(rect, getRect(obj));
+			var intersect = me.getIntersect(rect, obj.rect);
 			if (intersect) {
 				var rects = subtractRects([intersect], paintedRects);
 				for (var j in rects) {
@@ -160,7 +144,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		for (var i in objects) {
 			var obj = objects[objects.length - 1 - i];
 			if (!obj.transparent) continue;
-			var intersect = me.getIntersect(rect, getRect(obj));
+			var intersect = me.getIntersect(rect, obj.rect);
 			if (intersect) {
 				var rects = subtractRects([intersect], paintedRects);
 				for (var j in rects) {
@@ -169,6 +153,12 @@ function CanvasHelper(canvas, backgroundColor) {
 				}
 			}
 		}
+	}
+	var areRectsEqual = function(r1, r2) {
+		return r1.x1 == r2.x1
+			&& r1.y1 == r2.y1
+			&& r1.x2 == r2.x2
+			&& r1.y2 == r2.y2;
 	}
 	this.fillRect = function(rect) {
 		this.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
@@ -231,10 +221,10 @@ function CanvasHelper(canvas, backgroundColor) {
 	//only a temporary rectangle, never to be saved for rounding error purposes
 	this.scaleRect = function(rect) {
 		return new Rect(
-			Math.round(rect.x1 * this.scaleX),
-			Math.round(rect.y1 * this.scaleY),
-			Math.round(rect.x2 * this.scaleX),
-			Math.round(rect.y2 * this.scaleY)
+			Math.round(rect.x1 * scaleX),
+			Math.round(rect.y1 * scaleY),
+			Math.round(rect.x2 * scaleX),
+			Math.round(rect.y2 * scaleY)
 		);
 	}
 	
@@ -249,10 +239,13 @@ function CanvasHelper(canvas, backgroundColor) {
 	
 	function hitTest(e, obj) {
 		var pos = getMousePos(e);
-		return pos.x >= obj.x
-			&& pos.x <= obj.x + obj.width
-			&& pos.y >= obj.y
-			&& pos.y <= obj.y + obj.height;
+		//var posX = pos.x * scaleX;
+		//var posY = pos.y * scaleY;
+		var rect = me.scaleRect(obj.rect);
+		return pos.x >= rect.x1
+			&& pos.x <= rect.x2
+			&& pos.y >= rect.y1
+			&& pos.y <= rect.y2;
 	}
 	
 	var mouseX, mouseY;
@@ -263,7 +256,7 @@ function CanvasHelper(canvas, backgroundColor) {
 	
 	var clicked, dragging;
 	canvas.addEventListener('mousedown', function(e) {
-		if (this.turnOffEvents) return;
+		if (me.turnOffEvents) return;
 		sortObjectsByZindex();
 		for (var i in objects) {
 			var obj = objects[i];
@@ -281,11 +274,15 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (clicked && clicked.draggable)
 			dragging = clicked;
 		if (dragging) {
-			var changeX = getMouseX(e) - mouseX;
-			var changeY = getMouseY(e) - mouseY;
+			console.log(getMouseX(e) - mouseX);
+			console.log(getMouseY(e) - mouseY);
+			var changeX = Math.round((getMouseX(e) - mouseX) / scaleX);
+			var changeY = Math.round((getMouseY(e) - mouseY) / scaleY);
 			updateMouseCoords(e);
-			dragging.x += changeX;
-			dragging.y += changeY;
+			dragging.rect.x1 += changeX;
+			dragging.rect.y1 += changeY;
+			dragging.rect.x2 += changeX;
+			dragging.rect.y2 += changeY;
 			if (dragging.ondrag)
 				dragging.ondrag(changeX, changeY);
 			me.paint();
@@ -305,7 +302,7 @@ function CanvasHelper(canvas, backgroundColor) {
 	canvas.addEventListener('mouseup', mouseup);
 	
 	canvas.addEventListener('dblclick', function(e) {
-		if (this.turnOffEvents) return;
+		if (me.turnOffEvents) return;
 		sortObjectsByZindex();
 		for (var i in objects) {
 			var obj = objects[i];
@@ -327,13 +324,21 @@ function Rect(x1, y1, x2, y2, zindex) {
 
 var CanvasBaseObject = Class.extend({
 	init: function(x, y, width, height, zindex, draggable) {
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		this.zindex = zindex;
+		// this.x = x;
+		// this.y = y;
+		// preScaleWidth = width;
+		// preScaleHeight = height;
+		// this.zindex = zindex;
+		this.rect = new Rect(x, y, x + width, y + height, zindex);
 		this.draggable = draggable;
-	}
+	},
+	// getScaledRect: function() {
+		// return helper.scaleRect(this.rect);
+	// }
+	// getX: function() { return this.x * helper.scaleX }
+	// getY: function() { return this.y }
+	// getWidth: function() { return preScaleWidth }
+	// getHeight: function() { return preScaleHeight }
 });
 var CanvasColorObject = CanvasBaseObject.extend({
 	init: function(x, y, width, height, zindex, draggable, color) {
