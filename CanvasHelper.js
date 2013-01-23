@@ -8,10 +8,6 @@ function CanvasHelper(canvas, backgroundColor) {
 	var terminalZindex = -100;
 	var imageLoadingComplete;
 	var idIncrement = 0;
-	var preScaleWidth = canvas.width;
-	var preScaleHeight = canvas.height;
-	var scaleX = 1;
-	var scaleY = 1;
 	this.ctx = canvas.getContext('2d');
 	this.add = function(obj) {
 		objects.push(obj);
@@ -25,16 +21,15 @@ function CanvasHelper(canvas, backgroundColor) {
 	}
 	this.resize = function(width, height, scale) {
 		if (scale) {
-			scaleX = width / preScaleWidth;
-			scaleY = height / preScaleHeight;
-		} else {
-			//if objects have been scaled, their dimensions become permanent
+			var scaleX = width / canvas.width;
+			var scaleY = height / canvas.height;
 			for (var i in objects) {
 				var obj = objects[i];
-				obj.rect = this.scaleRect(obj.rect);
+				obj.rect.x1 *= scaleX;
+				obj.rect.y1 *= scaleY;
+				obj.rect.x2 *= scaleX;
+				obj.rect.y2 *= scaleY;
 			}
-			preScaleWidth = width;
-			preScaleHeight = height;
 		}
 		canvas.width = width;
 		canvas.height = height;
@@ -93,10 +88,10 @@ function CanvasHelper(canvas, backgroundColor) {
 			obj.repaint = false;
 		}
 		if (all) {
-			var rects = subtractRects([new Rect(0, 0, preScaleWidth, preScaleHeight, terminalZindex)], paintedRects);
+			var rects = subtractRects([new Rect(0, 0, canvas.width, canvas.height, terminalZindex)], paintedRects);
 			this.ctx.fillStyle = backgroundColor;
 			for (var i in rects)
-				this.fillRect(this.scaleRect(rects[i]));
+				this.fillRect(rects[i]);
 		}
 		for (var i in objects) {
 			var obj = objects[objects.length - 1 - i];
@@ -119,7 +114,7 @@ function CanvasHelper(canvas, backgroundColor) {
 			obj.repaint = false;
 		}
 	}
-	var paintRect = function(rect) {
+	function paintRect(rect) {
 		var paintedRects = [];
 		for (var i in objects) {
 			var obj = objects[i];
@@ -138,7 +133,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		me.ctx.fillStyle = backgroundColor;
 		for (var i in rects) {
 			var rect = rects[i];
-			me.fillRect(me.scaleRect(rect));
+			me.fillRect(rect);
 			paintedRects.push(rect);
 		}
 		for (var i in objects) {
@@ -147,14 +142,12 @@ function CanvasHelper(canvas, backgroundColor) {
 			var intersect = me.getIntersect(rect, obj.rect);
 			if (intersect) {
 				var rects = subtractRects([intersect], paintedRects);
-				for (var j in rects) {
-					var newRect = rects[j];
-					obj.paint(newRect);
-				}
+				for (var j in rects)
+					obj.paint(rects[j]);
 			}
 		}
 	}
-	var areRectsEqual = function(r1, r2) {
+	function areRectsEqual(r1, r2) {
 		return r1.x1 == r2.x1
 			&& r1.y1 == r2.y1
 			&& r1.x2 == r2.x2
@@ -218,15 +211,6 @@ function CanvasHelper(canvas, backgroundColor) {
 	function cloneRect(rect) {
 		return new Rect(rect.x1, rect.y1, rect.x2, rect.y2, rect.zindex);
 	}
-	//only a temporary rectangle, never to be saved for rounding error purposes
-	this.scaleRect = function(rect) {
-		return new Rect(
-			Math.round(rect.x1 * scaleX),
-			Math.round(rect.y1 * scaleY),
-			Math.round(rect.x2 * scaleX),
-			Math.round(rect.y2 * scaleY)
-		);
-	}
 	
 	function getMousePos(e) {
 		return {
@@ -239,13 +223,10 @@ function CanvasHelper(canvas, backgroundColor) {
 	
 	function hitTest(e, obj) {
 		var pos = getMousePos(e);
-		//var posX = pos.x * scaleX;
-		//var posY = pos.y * scaleY;
-		var rect = me.scaleRect(obj.rect);
-		return pos.x >= rect.x1
-			&& pos.x <= rect.x2
-			&& pos.y >= rect.y1
-			&& pos.y <= rect.y2;
+		return pos.x >= obj.rect.x1
+			&& pos.x <= obj.rect.x2
+			&& pos.y >= obj.rect.y1
+			&& pos.y <= obj.rect.y2;
 	}
 	
 	var mouseX, mouseY;
@@ -274,10 +255,8 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (clicked && clicked.draggable)
 			dragging = clicked;
 		if (dragging) {
-			console.log(getMouseX(e) - mouseX);
-			console.log(getMouseY(e) - mouseY);
-			var changeX = Math.round((getMouseX(e) - mouseX) / scaleX);
-			var changeY = Math.round((getMouseY(e) - mouseY) / scaleY);
+			var changeX = getMouseX(e) - mouseX;
+			var changeY = getMouseY(e) - mouseY;
 			updateMouseCoords(e);
 			dragging.rect.x1 += changeX;
 			dragging.rect.y1 += changeY;
@@ -324,21 +303,9 @@ function Rect(x1, y1, x2, y2, zindex) {
 
 var CanvasBaseObject = Class.extend({
 	init: function(x, y, width, height, zindex, draggable) {
-		// this.x = x;
-		// this.y = y;
-		// preScaleWidth = width;
-		// preScaleHeight = height;
-		// this.zindex = zindex;
 		this.rect = new Rect(x, y, x + width, y + height, zindex);
 		this.draggable = draggable;
-	},
-	// getScaledRect: function() {
-		// return helper.scaleRect(this.rect);
-	// }
-	// getX: function() { return this.x * helper.scaleX }
-	// getY: function() { return this.y }
-	// getWidth: function() { return preScaleWidth }
-	// getHeight: function() { return preScaleHeight }
+	}
 });
 var CanvasColorObject = CanvasBaseObject.extend({
 	init: function(x, y, width, height, zindex, draggable, color) {
@@ -347,7 +314,7 @@ var CanvasColorObject = CanvasBaseObject.extend({
 	},
 	paint: function(rect) {
 		helper.ctx.fillStyle = this.color;
-		helper.fillRect(helper.scaleRect(rect));
+		helper.fillRect(rect);
 	}
 });
 var CanvasImageObject = CanvasBaseObject.extend({
@@ -373,7 +340,6 @@ var CanvasImageObject = CanvasBaseObject.extend({
 		this.imageHeight = imageHeight;
 	},
 	paint: function(rect) {
-		var rect = helper.scaleRect(rect);
 		helper.ctx.drawImage(this.image,
 			this.imageX,
 			this.imageY,

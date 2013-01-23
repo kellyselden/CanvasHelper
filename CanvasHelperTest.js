@@ -2,7 +2,7 @@ var canvas = document.getElementById('canvas');
 //canvas.width = window.innerWidth;
 //canvas.height = window.innerHeight;
 function scale() {
-	helper.resize(window.innerWidth, window.innerHeight, true);
+	helper.resize(window.innerWidth, window.innerHeight, false);
 }
 window.onresize = function() {
 	scale();
