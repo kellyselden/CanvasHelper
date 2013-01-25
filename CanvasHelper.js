@@ -50,7 +50,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (!imageLoadingComplete) {
 			for (var i in imageObjects) {
 				var obj = imageObjects[i];
-				if (!obj.image.complete)
+				if (obj.preloading)
 					return setTimeout(function() { me.paint(all) }, 0);
 			}
 			imageLoadingComplete = true;
@@ -354,12 +354,14 @@ var CanvasImageObject = CanvasBaseObject.extend({
 		this.setImage(image);
 	},
 	setImage: function(image) {
-		this.image = image;
-		helper.imageLoadingComplete = false;
 		if (!image.complete) {
+			helper.imageLoadingComplete = false;
+			this.preloading = true;
 			var me = this;
 			return setTimeout(function() { me.setImage(image) }, 0); 
 		}
+		this.preloading = false;
+		this.image = image;
 		this.setImageDimensions(0, 0, image.width, image.height);
 	},
 	setImageDimensions: function(imageX, imageY, imageWidth, imageHeight) {
