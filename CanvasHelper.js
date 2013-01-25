@@ -5,6 +5,8 @@ function CanvasHelper(canvas, backgroundColor) {
 	var imageObjects = [];
 	var oldRects = [];
 	//this.turnOffEvents = false;
+	var desiredFramerate = 60;
+	var repaintMilliseconds = Math.round(1000 / desiredFramerate);
 	var terminalZindex = -100;
 	var imageLoadingComplete;
 	var idIncrement = 0;
@@ -16,7 +18,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (obj.constructor == CanvasImageObject)
 			imageObjects.push(obj);
 		if (oldRects[obj.id = idIncrement++]) throw 'object already added';
-		oldRects[obj.id] = obj.rect;
+		oldRects[obj.id] = cloneRect(obj.rect);
 		obj.helper = this;
 	}
 	this.resize = function(width, height, scale) {
@@ -84,7 +86,7 @@ function CanvasHelper(canvas, backgroundColor) {
 				for (var j in rects)
 					paintRect(rects[j]);
 			} else paintedRects.push(newRect);
-			oldRects[obj.id] = newRect;
+			oldRects[obj.id] = cloneRect(newRect);
 			obj.repaint = false;
 		}
 		if (all) {
@@ -110,7 +112,7 @@ function CanvasHelper(canvas, backgroundColor) {
 				for (var j in rects)
 					paintRect(rects[j]);
 			}
-			oldRects[obj.id] = newRect;
+			oldRects[obj.id] = cloneRect(newRect);
 			obj.repaint = false;
 		}
 	}
@@ -235,7 +237,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		mouseY = getMouseY(e);
 	}
 	
-	var clicked, dragging;
+	var clicked, dragging, isDragging;
 	canvas.addEventListener('mousedown', function(e) {
 		if (me.turnOffEvents) return;
 		sortObjectsByZindex();
@@ -252,9 +254,12 @@ function CanvasHelper(canvas, backgroundColor) {
 	});
 
 	canvas.addEventListener('mousemove', function(e) {
-		if (clicked && clicked.draggable)
+		if (clicked && clicked.draggable) {
 			dragging = clicked;
-		if (dragging) {
+			isDragging = true;
+			dragTimer();
+		}
+		if (isDragging) {
 			var changeX = getMouseX(e) - mouseX;
 			var changeY = getMouseY(e) - mouseY;
 			updateMouseCoords(e);
@@ -264,15 +269,28 @@ function CanvasHelper(canvas, backgroundColor) {
 			dragging.rect.y2 += changeY;
 			if (dragging.ondrag)
 				dragging.ondrag(changeX, changeY);
-			me.paint();
 		}
 		clicked = null;
 	});
+	function dragTimer() {
+		var startTime;
+		if (isDragging)
+			startTime = new Date().getTime();
+		var oldRect = oldRects[dragging.id];
+		var newRect = dragging.rect;
+		if (!areRectsEqual(oldRect, newRect))
+			me.paint();
+		if (isDragging) {
+			var endTime = new Date().getTime();
+			setTimeout(dragTimer, Math.max(0, repaintMilliseconds - (endTime - startTime)));
+		}
+		else dragging = null;
+	}
 
 	function mouseup(e) {
 		if (dragging && dragging.ondragend)
 			dragging.ondragend();
-		dragging = null;
+		isDragging = false;
 		if (clicked && clicked.onclick)
 			clicked.onclick();
 		clicked = null;
