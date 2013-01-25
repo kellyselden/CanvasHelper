@@ -156,6 +156,7 @@ function CanvasHelper(canvas, backgroundColor) {
 			&& r1.y2 == r2.y2;
 	}
 	this.fillRect = function(rect) {
+		rect = this.roundRect(rect);
 		this.ctx.fillRect(rect.x1, rect.y1, rect.x2 - rect.x1, rect.y2 - rect.y1);
 	}
 	this.getIntersect = function(r1, r2) {
@@ -212,6 +213,13 @@ function CanvasHelper(canvas, backgroundColor) {
 	}
 	function cloneRect(rect) {
 		return new Rect(rect.x1, rect.y1, rect.x2, rect.y2, rect.zindex);
+	}
+	this.roundRect = function(rect) {
+		return new Rect(
+			Math.round(rect.x1),
+			Math.round(rect.y1),
+			Math.round(rect.x2),
+			Math.round(rect.y2));
 	}
 	
 	function getMousePos(e) {
@@ -348,8 +356,11 @@ var CanvasImageObject = CanvasBaseObject.extend({
 	setImage: function(image) {
 		this.image = image;
 		helper.imageLoadingComplete = false;
-		if (image.complete)
-			this.setImageDimensions(0, 0, image.width, image.height);
+		if (!image.complete) {
+			var me = this;
+			return setTimeout(function() { me.setImage(image) }, 0); 
+		}
+		this.setImageDimensions(0, 0, image.width, image.height);
 	},
 	setImageDimensions: function(imageX, imageY, imageWidth, imageHeight) {
 		this.imageX = imageX;
@@ -358,6 +369,7 @@ var CanvasImageObject = CanvasBaseObject.extend({
 		this.imageHeight = imageHeight;
 	},
 	paint: function(rect) {
+		rect = helper.roundRect(rect);
 		helper.ctx.drawImage(this.image,
 			this.imageX,
 			this.imageY,

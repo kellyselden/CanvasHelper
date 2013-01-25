@@ -25,8 +25,10 @@ function start() {
 	helper.add(box4);
 	helper.add(imageBox);
 	box2.ondrag = function(changeX, changeY) {
-		box4.x += changeX;
-		box4.y += changeY;
+		box4.rect.x1 += changeX;
+		box4.rect.y1 += changeY;
+		box4.rect.x2 += changeX;
+		box4.rect.y2 += changeY;
 	};
 	scale();
 }
