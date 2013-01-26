@@ -331,9 +331,16 @@ function Rect(x1, y1, x2, y2, zindex) {
 }
 
 var CanvasBaseObject = Class.extend({
-	init: function(x, y, width, height, zindex, draggable) {
-		this.rect = new Rect(x, y, x + width, y + height, zindex);
-		this.draggable = draggable;
+	init: function(stuff) {
+		var x = stuff.x || 0;
+		var y = stuff.y || 0;
+		this.rect = new Rect(
+			x,
+			y,
+			x + stuff.width || 0,
+			y + stuff.height || 0,
+			stuff.zindex || 0);
+		this.draggable = stuff.draggable;
 		
 		this.links = [];
 	},
@@ -342,9 +349,9 @@ var CanvasBaseObject = Class.extend({
 	}
 });
 var CanvasColorObject = CanvasBaseObject.extend({
-	init: function(x, y, width, height, zindex, draggable, color) {
-		this._super(x, y, width, height, zindex, draggable);
-		this.color = color;
+	init: function(stuff) {
+		this._super(stuff);
+		this.color = stuff.color;
 	},
 	paint: function(rect) {
 		helper.ctx.fillStyle = this.color;
@@ -352,9 +359,11 @@ var CanvasColorObject = CanvasBaseObject.extend({
 	}
 });
 var CanvasImageObject = CanvasBaseObject.extend({
-	init: function(x, y, width, height, zindex, draggable, transparent) {
-		this._super(x, y, width, height, zindex, draggable);
-		this.transparent = transparent;
+	init: function(stuff) {
+		this._super(stuff);
+		this.transparent = stuff.transparent;
+		if (stuff.path)
+			this.loadImage(stuff.path);
 	},
 	loadImage: function(path) {
 		var image = new Image();
