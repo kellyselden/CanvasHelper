@@ -35,7 +35,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		}
 		canvas.width = width;
 		canvas.height = height;
-		this.paint(true);
+		paint(true);
 	}
 	function sortObjectsByZindex() {
 		objects.sort(function(a, b) {
@@ -46,13 +46,11 @@ function CanvasHelper(canvas, backgroundColor) {
 			return 0;
 		});
 	}
-	this.paint = function(all) {
+	function paint(all) {
 		if (!imageLoadingComplete) {
-			for (var i in imageObjects) {
-				var obj = imageObjects[i];
-				if (obj.preloading)
-					return setTimeout(function() { me.paint(all) }, 0);
-			}
+			for (var i in imageObjects)
+				if (imageObjects[i].preloading)
+					return setTimeout(function() { paint(all) }, 0);
 			imageLoadingComplete = true;
 		}
 		var paintedRects = [];
@@ -72,7 +70,7 @@ function CanvasHelper(canvas, backgroundColor) {
 			} else if (!areRectsEqual(oldRect, newRect)) {
 				//don't repaint part of boxes that don't change
 				if (obj.constructor == CanvasColorObject) {
-					var rect = this.getIntersect(oldRect, newRect);
+					var rect = me.getIntersect(oldRect, newRect);
 					//box moved so fast it has no intersect
 					if (rect) paintedRects.push(rect);
 				}
@@ -91,9 +89,9 @@ function CanvasHelper(canvas, backgroundColor) {
 		}
 		if (all) {
 			var rects = subtractRects([new Rect(0, 0, canvas.width, canvas.height, terminalZindex)], paintedRects);
-			this.ctx.fillStyle = backgroundColor;
+			me.ctx.fillStyle = backgroundColor;
 			for (var i in rects)
-				this.fillRect(rects[i]);
+				me.fillRect(rects[i]);
 		}
 		for (var i in objects) {
 			var obj = objects[objects.length - 1 - i];
@@ -287,7 +285,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		var oldRect = oldRects[dragging.id];
 		var newRect = dragging.rect;
 		if (!areRectsEqual(oldRect, newRect))
-			me.paint();
+			paint();
 		if (isDragging) {
 			var endTime = new Date().getTime();
 			setTimeout(dragTimer, Math.max(0, repaintMilliseconds - (endTime - startTime)));
