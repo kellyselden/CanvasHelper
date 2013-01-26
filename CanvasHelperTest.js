@@ -9,14 +9,9 @@ helper.add(box1);
 helper.add(box2);
 helper.add(box3);
 helper.add(box4);
+box2.add(box4);
 helper.add(imageBox);
 imageBox.loadImage('Capture.PNG');
-box2.ondrag = function(changeX, changeY) {
-	box4.rect.x1 += changeX;
-	box4.rect.y1 += changeY;
-	box4.rect.x2 += changeX;
-	box4.rect.y2 += changeY;
-};
 function scale() {
 	helper.resize(window.innerWidth, window.innerHeight, true);
 }

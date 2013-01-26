@@ -243,7 +243,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		mouseY = getMouseY(e);
 	}
 	
-	var clicked, dragging, isDragging;
+	var clicked, dragging, isDragging, draggingList;
 	canvas.addEventListener('mousedown', function(e) {
 		if (me.turnOffEvents) return;
 		sortObjectsByZindex();
@@ -263,16 +263,21 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (clicked && clicked.draggable) {
 			dragging = clicked;
 			isDragging = true;
+			draggingList = dragging.links.slice(0);
+			draggingList.push(dragging);
 			dragTimer();
 		}
 		if (isDragging) {
 			var changeX = getMouseX(e) - mouseX;
 			var changeY = getMouseY(e) - mouseY;
 			updateMouseCoords(e);
-			dragging.rect.x1 += changeX;
-			dragging.rect.y1 += changeY;
-			dragging.rect.x2 += changeX;
-			dragging.rect.y2 += changeY;
+			for (var i in draggingList) {
+				var drag = draggingList[i];
+				drag.rect.x1 += changeX;
+				drag.rect.y1 += changeY;
+				drag.rect.x2 += changeX;
+				drag.rect.y2 += changeY;
+			}
 			if (dragging.ondrag)
 				dragging.ondrag(changeX, changeY);
 		}
@@ -329,6 +334,11 @@ var CanvasBaseObject = Class.extend({
 	init: function(x, y, width, height, zindex, draggable) {
 		this.rect = new Rect(x, y, x + width, y + height, zindex);
 		this.draggable = draggable;
+		
+		this.links = [];
+	},
+	add: function(obj) {
+		this.links.push(obj);
 	}
 });
 var CanvasColorObject = CanvasBaseObject.extend({
