@@ -81,8 +81,11 @@ function CanvasHelper(canvas, backgroundColor) {
 					paintedRects.push(rect);
 				}
 				rects = subtractRects([oldRect], paintedRects);
-				for (var j in rects)
-					paintRect(rects[j]);
+				for (var j in rects) {
+					var rect = rects[j];
+					paintRect(rect);
+					paintedRects.push(rect);
+				}
 			} else paintedRects.push(newRect);
 			oldRects[obj.id] = cloneRect(newRect);
 			obj.repaint = false;
@@ -90,25 +93,28 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (all) {
 			var rects = subtractRects([new Rect(0, 0, canvas.width, canvas.height, terminalZindex)], paintedRects);
 			me.ctx.fillStyle = backgroundColor;
-			for (var i in rects)
-				me.fillRect(rects[i]);
+			for (var i in rects) {
+				var rect = rects[i];
+				me.fillRect(rect);
+				paintedRects.push(rect);
+			}
 		}
 		for (var i in objects) {
 			var obj = objects[objects.length - 1 - i];
 			if (!obj.transparent) continue;
 			var oldRect = oldRects[obj.id];
 			var newRect = obj.rect;
-			var rects = subtractRects([newRect], paintedRects);
-			for (var j in rects) {
-				var rect = rects[j];
-				obj.paint(rect);
-				paintedRects.push(rect);
-			}
+			paintRect(newRect);
+			obj.paint(newRect);
+			paintedRects.push(newRect);
 			if (!areRectsEqual(oldRect, newRect)) {
-				oldRect.zindex = terminalZindex;
-				rects = subtractRects([oldRect], paintedRects);
-				for (var j in rects)
-					paintRect(rects[j]);
+				//oldRect.zindex = terminalZindex;
+				var rects = subtractRects([oldRect], paintedRects);
+				for (var j in rects) {
+					var rect = rects[j];
+					paintRect(rect);
+					paintedRects.push(rect);
+				}
 			}
 			oldRects[obj.id] = cloneRect(newRect);
 			obj.repaint = false;
@@ -141,9 +147,8 @@ function CanvasHelper(canvas, backgroundColor) {
 			if (!obj.transparent) continue;
 			var intersect = me.getIntersect(rect, obj.rect);
 			if (intersect) {
-				var rects = subtractRects([intersect], paintedRects);
-				for (var j in rects)
-					obj.paint(rects[j]);
+				obj.paint(intersect);
+				paintedRects.push(intersect);
 			}
 		}
 	}
@@ -389,11 +394,13 @@ var CanvasImageObject = CanvasBaseObject.extend({
 	},
 	paint: function(rect) {
 		rect = helper.roundRect(rect);
+		var scaleX = this.imageWidth / (this.rect.x2 - this.rect.x1);
+		var scaleY = this.imageHeight / (this.rect.y2 - this.rect.y1);
 		helper.ctx.drawImage(this.image,
-			this.imageX,
-			this.imageY,
-			this.imageWidth,
-			this.imageHeight,
+			this.imageX + (rect.x1 - this.rect.x1) * scaleX,
+			this.imageY + (rect.y1 - this.rect.y1) * scaleY,
+			(rect.x2 - rect.x1) * scaleX,
+			(rect.y2 - rect.y1) * scaleY,
 			rect.x1,
 			rect.y1,
 			rect.x2 - rect.x1,
