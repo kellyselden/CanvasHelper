@@ -397,10 +397,10 @@ var CanvasImageObject = CanvasBaseObject.extend({
 		var scaleX = this.imageWidth / (this.rect.x2 - this.rect.x1);
 		var scaleY = this.imageHeight / (this.rect.y2 - this.rect.y1);
 		helper.ctx.drawImage(this.image,
-			this.imageX + (rect.x1 - this.rect.x1) * scaleX,
-			this.imageY + (rect.y1 - this.rect.y1) * scaleY,
-			(rect.x2 - rect.x1) * scaleX,
-			(rect.y2 - rect.y1) * scaleY,
+			Math.round(this.imageX + (rect.x1 - this.rect.x1) * scaleX),
+			Math.round(this.imageY + (rect.y1 - this.rect.y1) * scaleY),
+			Math.round((rect.x2 - rect.x1) * scaleX),
+			Math.round((rect.y2 - rect.y1) * scaleY),
 			rect.x1,
 			rect.y1,
 			rect.x2 - rect.x1,
