@@ -22,7 +22,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		if (oldRects[obj.id = idIncrement++]) throw 'object already added';
 		oldRects[obj.id] = Rect.clone(obj.rect);
 		obj.helper = this;
-	}
+	};
 	this.resize = function(width, height, scale) {
 		if (scale) {
 			var scaleX = width / canvas.width;
@@ -38,7 +38,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		canvas.width = width;
 		canvas.height = height;
 		paint(true);
-	}
+	};
 	function sortObjectsByZindex() {
 		objects.sort(function(a, b) {
 			if (a.rect.zindex < b.rect.zindex)
@@ -163,14 +163,14 @@ function CanvasHelper(canvas, backgroundColor) {
 	this.fillRect = function(rect) {
 		rect = this.roundRect(rect);
 		this.ctx.fillRect(rect.getX1(), rect.getY1(), rect.getX2() - rect.getX1(), rect.getY2() - rect.getY1());
-	}
+	};
 	this.roundRect = function(rect) {
 		return new Rect(
 			Math.round(rect.getX1()),
 			Math.round(rect.getY1()),
 			Math.round(rect.getX2()),
 			Math.round(rect.getY2()));
-	}
+	};
 	
 	function getMousePos(e) {
 		return {

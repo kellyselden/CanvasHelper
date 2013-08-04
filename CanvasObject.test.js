@@ -137,25 +137,15 @@ test('CanvasImageObject.paint', function() {
 	var box = new CanvasImageObject({
 		x: 50,
 		y: 50,
-		width: 150,
-		height: 150,
+		width: 100,
+		height: 100,
 		path: 'test',
 		imageFactory: sinon.stub().returns(image)
 	});
 	box.loadImage();
 	var rect = new Rect(75, 75, 125, 125);
-	var roundRect = sinon.stub().withArgs(rect).returns(rect);
-	var drawImage = sinon.stub().withArgs(
-		image,
-		6.25,
-		6.25,
-		18.75,
-		18.75,
-		75,
-		75,
-		50,
-		50
-	);
+	var roundRect = sinon.stub().throws().withArgs(rect).returnsArg(0);
+	var drawImage = sinon.spy();
 	box.helper = {
 		roundRect: roundRect,
 		ctx: {
@@ -163,6 +153,16 @@ test('CanvasImageObject.paint', function() {
 		}
 	};
 	box.paint(rect);
-	ok(roundRect.called);
-	ok(drawImage.called);
+	ok(roundRect.calledWith(rect));
+	ok(drawImage.calledWith(
+		image,
+		6.25,
+		6.25,
+		12.5,
+		12.5,
+		75,
+		75,
+		50,
+		50
+	));
 });
