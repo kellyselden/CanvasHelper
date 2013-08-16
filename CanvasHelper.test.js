@@ -26,3 +26,10 @@ test('CanvasHelper', function() {
 		addEventListener.withArgs('mouseout').args[1],
 		addEventListener.withArgs('mouseup').args[1]);
 });
+test('CanvasHelper.add', function() {
+	var canvasHelper = new CanvasHelper({
+		getContext: sinon.stub(),
+		addEventListener: sinon.stub()
+	});
+	//canvasHelper.add();
+});
