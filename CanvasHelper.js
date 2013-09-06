@@ -19,8 +19,7 @@ function CanvasHelper(canvas, backgroundColor) {
 			imageObjects.push(obj);
 			if (obj.path) obj.loadImage();
 		}
-		if (oldRects[obj.id = idIncrement++]) throw 'object already added';
-		oldRects[obj.id] = Rect.clone(obj.rect);
+		oldRects[obj.id = idIncrement++] = obj.rect.clone();
 		obj.helper = this;
 	};
 	this.resize = function(width, height, scale) {
@@ -89,7 +88,7 @@ function CanvasHelper(canvas, backgroundColor) {
 					paintedRects.push(rect);
 				}
 			} else paintedRects.push(newRect);
-			oldRects[obj.id] = Rect.clone(newRect);
+			oldRects[obj.id] = newRect.clone();
 			obj.repaint = false;
 		}
 		if (all) {
@@ -97,7 +96,7 @@ function CanvasHelper(canvas, backgroundColor) {
 			me.ctx.fillStyle = backgroundColor;
 			for (var i in rects) {
 				var rect = rects[i];
-				me.fillRect(rect);
+				fillRect(rect);
 				paintedRects.push(rect);
 			}
 		}
@@ -124,7 +123,7 @@ function CanvasHelper(canvas, backgroundColor) {
 					paintedRects.push(rect);
 				}
 			}
-			oldRects[obj.id] = Rect.clone(newRect);
+			oldRects[obj.id] = newRect.clone();
 			obj.repaint = false;
 		}
 	}
@@ -147,7 +146,7 @@ function CanvasHelper(canvas, backgroundColor) {
 		me.ctx.fillStyle = backgroundColor;
 		for (var i in rects) {
 			var rect = rects[i];
-			me.fillRect(rect);
+			fillRect(rect);
 			paintedRects.push(rect);
 		}
 		for (var i in objects) {
@@ -160,17 +159,17 @@ function CanvasHelper(canvas, backgroundColor) {
 			}
 		}
 	}
-	this.fillRect = function(rect) {
-		rect = this.roundRect(rect);
-		this.ctx.fillRect(rect.getX1(), rect.getY1(), rect.getX2() - rect.getX1(), rect.getY2() - rect.getY1());
-	};
-	this.roundRect = function(rect) {
-		return new Rect(
-			Math.round(rect.getX1()),
-			Math.round(rect.getY1()),
-			Math.round(rect.getX2()),
-			Math.round(rect.getY2()));
-	};
+	function fillRect(rect) {
+		if (rect = roundRect(rect))
+			me.ctx.fillRect(rect.getX1(), rect.getY1(), rect.getX2() - rect.getX1(), rect.getY2() - rect.getY1());
+	}
+	function roundRect(rect) {
+		var x1 = Math.round(rect.getX1());
+		var y1 = Math.round(rect.getY1());
+		var x2 = Math.round(rect.getX2());
+		var y2 = Math.round(rect.getY2());
+		return x1 == x2 || y1 == y2 ? null : new Rect(x1, y1, x2, y2);
+	}
 	
 	function getMousePos(e) {
 		return {
